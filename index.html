@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>REDLINE — The Supercar Atlas | Interactive 3D Supercar Experience</title>
+    <meta
+      name="description"
+      content="Drive through an immersive 3D supercar experience. Configure a Ferrari 458 Italia in real time, dissect its V8 anatomy, and race through the legends that defined speed."
+    />
+    <meta name="theme-color" content="#070708" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;500;700;900&family=Archivo:wdth,wght@62..125,300..700&family=JetBrains+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <!-- ───────── Preloader: a tachometer that revs as the model streams in ───────── -->
+    <div class="loader" id="loader" role="status" aria-live="polite">
+      <div class="loader__dial">
+        <svg viewBox="0 0 200 200" aria-hidden="true">
+          <circle class="loader__track" cx="100" cy="100" r="84" />
+          <circle class="loader__arc" id="loader-arc" cx="100" cy="100" r="84" />
+          <circle class="loader__redzone" cx="100" cy="100" r="84" />
+        </svg>
+        <div class="loader__readout">
+          <span class="loader__rpm" id="loader-rpm">0000</span>
+          <span class="loader__unit">RPM</span>
+        </div>
+      </div>
+      <p class="loader__label">Warming the V8 <span id="loader-pct">0%</span></p>
+    </div>
+
+    <canvas id="webgl" aria-hidden="true"></canvas>
+    <div class="vignette" aria-hidden="true"></div>
+    <div class="grain" aria-hidden="true"></div>
+    <div class="progress" aria-hidden="true"><span id="progress-bar"></span></div>
+
+    <!-- ───────── Navigation ───────── -->
+    <header class="nav">
+      <a href="#hero" class="nav__logo" id="nav-logo" aria-label="Redline — back to top">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 22a12 12 0 1 1 24 0" /><path class="needle" d="M16 22 25 11" /></svg>
+        <span>REDLINE<em>/</em></span>
+      </a>
+      <nav aria-label="Primary">
+        <ul class="nav__links">
+          <li><a href="#anatomy" id="nav-anatomy">Anatomy</a></li>
+          <li><a href="#configure" id="nav-configure">Atelier</a></li>
+          <li><a href="#legends" id="nav-legends">Legends</a></li>
+          <li><a href="#velocity" id="nav-velocity">Velocity</a></li>
+        </ul>
+      </nav>
+      <a href="#configure" class="nav__cta" id="nav-cta">Configure <span aria-hidden="true">→</span></a>
+    </header>
+
+    <!-- ───────── Chapter rail ───────── -->
+    <ol class="rail" aria-label="Chapters">
+      <li><a href="#hero" data-rail="0" id="rail-hero"><span>01</span><b>Ignition</b></a></li>
+      <li><a href="#anatomy" data-rail="1" id="rail-anatomy"><span>02</span><b>Anatomy</b></a></li>
+      <li><a href="#configure" data-rail="2" id="rail-configure"><span>03</span><b>Atelier</b></a></li>
+      <li><a href="#legends" data-rail="3" id="rail-legends"><span>04</span><b>Legends</b></a></li>
+      <li><a href="#velocity" data-rail="4" id="rail-velocity"><span>05</span><b>Velocity</b></a></li>
+      <li><a href="#finale" data-rail="5" id="rail-finale"><span>06</span><b>Finish</b></a></li>
+    </ol>
+
+    <!-- ───────── Scroll-speed HUD: scrolling is driving ───────── -->
+    <aside class="hud" aria-hidden="true">
+      <div class="hud__rpm" id="hud-rpm"></div>
+      <div class="hud__row">
+        <span class="hud__speed" id="hud-speed">000</span>
+        <span class="hud__unit">km/h</span>
+        <span class="hud__gear" id="hud-gear">N</span>
+      </div>
+      <p class="hud__hint">Scroll to accelerate</p>
+    </aside>
+
+    <main>
+      <!-- 01 — Hero -->
+      <section class="chapter hero" id="hero" data-chapter="hero">
+        <div class="chapter__inner">
+          <p class="eyebrow reveal-hero"><span>01</span> Ignition — Ferrari 458 Italia</p>
+          <h1 class="hero__title">
+            <span class="line"><span class="reveal-hero">Machines</span></span>
+            <span class="line"><span class="reveal-hero">that bend</span></span>
+            <span class="line"><span class="reveal-hero"><em>time.</em></span></span>
+          </h1>
+          <p class="hero__lede reveal-hero">
+            A naturally aspirated V8 that screams to nine thousand RPM. Five hundred and seventy horses.
+            One scroll wheel. Take the wheel and drive the page.
+          </p>
+          <div class="hero__actions reveal-hero">
+            <a href="#configure" class="btn btn--primary" id="hero-configure">Configure yours</a>
+            <a href="#legends" class="btn btn--ghost" id="hero-legends">Meet the legends</a>
+          </div>
+        </div>
+        <div class="hero__cue reveal-hero" aria-hidden="true">
+          <span class="hero__cue-line"></span>
+          Scroll to accelerate
+        </div>
+        <p class="hero__mark" aria-hidden="true">458</p>
+      </section>
+
+      <!-- 02 — Anatomy -->
+      <section class="chapter anatomy" id="anatomy" data-chapter="anatomy">
+        <div class="chapter__inner">
+          <p class="eyebrow" data-reveal><span>02</span> Anatomy</p>
+          <h2 class="chapter__title" data-reveal>Engineered <br />around a <em>heartbeat.</em></h2>
+          <p class="chapter__lede" data-reveal>
+            Mid-mounted, flat-plane crank, 4,497&nbsp;cc. Every surface of the 458 exists to feed, cool or
+            pin that engine to the tarmac — Pininfarina sculpted the air itself.
+          </p>
+          <dl class="specs">
+            <div class="spec" data-reveal>
+              <dt>Power</dt>
+              <dd><span class="counter" data-count="570">0</span><small>CV</small></dd>
+              <p>@ 9,000 rpm</p>
+            </div>
+            <div class="spec" data-reveal>
+              <dt>0 – 100 km/h</dt>
+              <dd><span class="counter" data-count="3.4" data-decimals="1">0</span><small>s</small></dd>
+              <p>Launch control, F1 DCT</p>
+            </div>
+            <div class="spec" data-reveal>
+              <dt>Top speed</dt>
+              <dd><span class="counter" data-count="325">0</span><small>km/h</small></dd>
+              <p>Drag coefficient 0.33</p>
+            </div>
+            <div class="spec" data-reveal>
+              <dt>Redline</dt>
+              <dd><span class="counter" data-count="9000" data-sep="true">0</span><small>rpm</small></dd>
+              <p>540 Nm of torque</p>
+            </div>
+          </dl>
+          <ul class="tags" data-reveal>
+            <li>V8 · Naturally aspirated</li>
+            <li>7-speed dual-clutch</li>
+            <li>1,380 kg dry</li>
+            <li>Mid-engine RWD</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- 03 — Configurator -->
+      <section class="chapter atelier" id="configure" data-chapter="configure">
+        <div class="atelier__stage" id="drag-stage" aria-hidden="true">
+          <span class="atelier__drag"><i></i> Drag to rotate</span>
+        </div>
+        <div class="atelier__panel" data-reveal>
+          <p class="eyebrow"><span>03</span> Atelier</p>
+          <h2 class="chapter__title chapter__title--sm">Make it <em>yours.</em></h2>
+
+          <fieldset class="opt">
+            <legend>Paint <output id="paint-name">Rosso Corsa</output></legend>
+            <div class="swatches" id="paint-swatches">
+              <button class="swatch is-active" id="paint-rosso" data-color="#a8100b" data-name="Rosso Corsa" aria-pressed="true" style="--c:#a8100b" aria-label="Rosso Corsa"></button>
+              <button class="swatch" id="paint-giallo" data-color="#f0b400" data-name="Giallo Modena" aria-pressed="false" style="--c:#f0b400" aria-label="Giallo Modena"></button>
+              <button class="swatch" id="paint-arancio" data-color="#e2520f" data-name="Arancio Borealis" aria-pressed="false" style="--c:#e2520f" aria-label="Arancio Borealis"></button>
+              <button class="swatch" id="paint-blu" data-color="#14286a" data-name="Blu Pozzi" aria-pressed="false" style="--c:#14286a" aria-label="Blu Pozzi"></button>
+              <button class="swatch" id="paint-verde" data-color="#1d3a2a" data-name="Verde Abetone" aria-pressed="false" style="--c:#1d3a2a" aria-label="Verde Abetone"></button>
+              <button class="swatch" id="paint-bianco" data-color="#e9e6df" data-name="Bianco Avus" aria-pressed="false" style="--c:#e9e6df" aria-label="Bianco Avus"></button>
+              <button class="swatch" id="paint-nero" data-color="#09090b" data-name="Nero Daytona" aria-pressed="false" style="--c:#09090b" aria-label="Nero Daytona"></button>
+            </div>
+          </fieldset>
+
+          <fieldset class="opt">
+            <legend>Wheels <output id="rim-name">Argento</output></legend>
+            <div class="chips" id="rim-chips">
+              <button class="chip is-active" id="rim-argento" data-color="#cfcfcf" data-name="Argento" aria-pressed="true"><i style="--c:#cfcfcf"></i>Argento</button>
+              <button class="chip" id="rim-grafite" data-color="#2a2a2e" data-name="Grafite" aria-pressed="false"><i style="--c:#2a2a2e"></i>Grafite</button>
+              <button class="chip" id="rim-oro" data-color="#c0913f" data-name="Oro" aria-pressed="false"><i style="--c:#c0913f"></i>Oro</button>
+            </div>
+          </fieldset>
+
+          <fieldset class="opt">
+            <legend>Glass <output id="glass-name">Clear</output></legend>
+            <div class="chips" id="glass-chips">
+              <button class="chip is-active" id="glass-clear" data-glass="clear" data-name="Clear" aria-pressed="true">Clear</button>
+              <button class="chip" id="glass-smoke" data-glass="smoke" data-name="Smoked" aria-pressed="false">Smoked</button>
+            </div>
+          </fieldset>
+
+          <div class="atelier__rotate">
+            <button class="icon-btn" id="rotate-left" aria-label="Rotate car left">⟲</button>
+            <button class="icon-btn" id="rotate-reset" aria-label="Reset rotation">Reset</button>
+            <button class="icon-btn" id="rotate-right" aria-label="Rotate car right">⟳</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 04 — Legends -->
+      <section class="chapter legends" id="legends" data-chapter="legends">
+        <div class="legends__head">
+          <div>
+            <p class="eyebrow" data-reveal><span>04</span> Legends</p>
+            <h2 class="chapter__title" data-reveal>Six cars that <br /><em>rewrote</em> the rules.</h2>
+          </div>
+          <div class="legends__nav" data-reveal>
+            <button class="icon-btn" id="legends-prev" aria-label="Previous legend">←</button>
+            <button class="icon-btn" id="legends-next" aria-label="Next legend">→</button>
+          </div>
+        </div>
+        <div class="legends__track" id="legends-track" tabindex="0" aria-label="Legendary supercars, scroll horizontally">
+          <!-- cards injected from data in ui.js -->
+        </div>
+      </section>
+
+      <!-- 05 — Velocity -->
+      <section class="chapter velocity" id="velocity" data-chapter="velocity">
+        <div class="chapter__inner">
+          <p class="eyebrow" data-reveal><span>05</span> Velocity</p>
+          <h2 class="chapter__title" data-reveal>The war on <br /><em>air resistance.</em></h2>
+          <p class="chapter__lede" data-reveal>Top speeds of the fastest road cars ever measured — and where our 458 sits among them.</p>
+          <ol class="race" id="race"></ol>
+          <p class="footnote" data-reveal>Figures from publicly reported runs and manufacturer claims. Conditions vary.</p>
+        </div>
+      </section>
+
+      <!-- 06 — Finale -->
+      <section class="chapter finale" id="finale" data-chapter="finale">
+        <div class="finale__inner">
+          <p class="eyebrow" data-reveal><span>06</span> Finish line</p>
+          <h2 class="finale__title" data-reveal>The road <br />is <em>waiting.</em></h2>
+          <a href="#hero" class="btn btn--primary" id="finale-restart" data-reveal>Restart engine</a>
+        </div>
+        <footer class="footer">
+          <p>REDLINE<em>/</em> — The Supercar Atlas. An independent fan showcase.</p>
+          <p>
+            3D model “Ferrari 458 Italia” by vicent091036 (CC BY 4.0), via the
+            <a href="https://threejs.org/examples/#webgl_materials_car" target="_blank" rel="noopener">three.js examples</a>.
+            Ferrari is a trademark of its owner; no affiliation.
+          </p>
+        </footer>
+      </section>
+    </main>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
